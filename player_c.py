@@ -2,10 +2,12 @@
 import socket
 import json
 
+# connect to server
 host, port = '127.0.0.1', 5010
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect((host, port))
 
+# receive current_state dictionary from server
 def recv():
     buffer = b""
     while len(buffer) < 4:
@@ -24,14 +26,23 @@ def pretty_print(state):
     print("\n\n---------------------------------------\n")
 
 if __name__ == "__main__":
-    state = recv()
-    while not state["complete"]:
-        pretty_print(state)
-
-        letter = input(state["msg"]).upper()
-        client.send(letter.encode())
+    try:
         state = recv()
+        while not state["complete"]: # while the game is going
+            pretty_print(state)
+            while True:
+                letter = input(state["msg"]).upper() # enter a letter
+                if len(letter) == 1: # make sure it's only one letter
+                    break
+                print("Only enter one letter!")
 
-    print(state["display_word"])
-    print(state["image"])
-    print(state["msg"])
+            client.send(letter.encode()) # send the letter back to the server
+            state = recv()
+
+        print(state["display_word"])
+        print(state["image"])
+        print(state["msg"])
+
+    except (KeyboardInterrupt, ConnectionResetError, BrokenPipeError):
+        print("Disconnected from server")
+        exit()
